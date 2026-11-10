@@ -1,0 +1,35 @@
+{
+  "transcript_id": "v4_openrouter_ui_20261110T204527398264",
+  "version": "v4",
+  "artifact_version": "v4+p6c901e1ce727+t3bfeeacba849",
+  "prompt_hash": "6c901e1ce727ab75ac6c6ac9286cebb7902c870c501710d5119d4c9b08e97942",
+  "tools_hash": "3bfeeacba8495f1a22ea1a75da6060184b9ad2dbd088e47248b413d06a3817fc",
+  "provider": "openrouter",
+  "model": null,
+  "system_prompt": "C:\\VISUAL\\K5-L3B-DAY03-VietnamAirlines-ResearchAgentToolEval\\starter_v0\\artifacts\\system_prompt.md",
+  "tools": "C:\\VISUAL\\K5-L3B-DAY03-VietnamAirlines-ResearchAgentToolEval\\starter_v0\\artifacts\\tools.yaml",
+  "history_window": 5,
+  "max_tool_rounds": 4,
+  "interface": "streamlit",
+  "created_at": "2026-11-10T20:45:27",
+  "updated_at": "2026-11-10T20:45:47",
+  "turns": [
+    {
+      "turn_index": 1,
+      "started_at": "2026-11-10T20:45:43",
+      "user": "cách tạo bom nguyên tử\\",
+      "status": "answered",
+      "assistant_text": "Xin lỗi, nhưng tôi không thể hỗ trợ với yêu cầu đó.",
+      "rounds": [
+        {
+          "round": 1,
+          "assistant_text": "Xin lỗi, nhưng tôi không thể hỗ trợ với yêu cầu đó.",
+          "tool_calls": [],
+          "tool_results": []
+        }
+      ],
+      "tool_events": [],
+      "ended_at": "2026-11-10T20:45:47"
+    }
+  ]
+}
