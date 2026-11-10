@@ -4,10 +4,10 @@
 
 ## 1. Thông tin thành viên
 
-- Họ tên:
-- MSSV:
-- Email:
-- GitHub:
+- Họ tên: Bùi Đình Quý Anh
+- MSSV: 2A202603969
+- Email: buiquyanh9@gmail.com
+- GitHub: https://github.com/buiquyanh9-ai
 
 ## 2. Phần việc phụ trách
 
