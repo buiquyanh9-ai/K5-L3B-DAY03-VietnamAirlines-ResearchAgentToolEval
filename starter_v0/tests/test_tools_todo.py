@@ -110,13 +110,97 @@ def test_policy_instruction_like_lines_go_to_untrusted_text() -> None:
 #   2. bad / missing input from the model (empty string, wrong type, out-of-enum value)
 #   3. failure path (missing key, HTTP error, timeout) -> returns error dict, does not raise
 
-def test_my_new_tool_happy_path() -> None:
-    pytest.skip(TODO)
+# hn_search: Hacker News search via the public Algolia API (team VietnamAirlines).
+
+hn_search = TOOL_FUNCTIONS["hn_search"]
+
+HN_HITS = {"hits": [
+    {"objectID": "101", "title": "LLM agents in prod", "url": "https://www.example.com/agents",
+     "author": "alice", "points": 300, "num_comments": 42, "created_at": "2026-11-01T10:00:00Z"},
+    {"objectID": "102", "title": "Ask HN: How do you eval agents?", "url": None,
+     "author": "bob", "points": 50, "num_comments": 10, "created_at": "2026-11-02T10:00:00Z"},
+    {"title": "hit without objectID is skipped"},
+]}
 
 
-def test_my_new_tool_bad_input_from_model() -> None:
-    pytest.skip(TODO)
+def test_hn_search_sends_expected_request_and_maps_results(fake_http) -> None:
+    calls = fake_http(FakeResponse(HN_HITS))
+
+    result = hn_search(query="LLM agents", limit=3)
+
+    assert len(calls) == 1
+    assert calls[0]["method"] == "GET"
+    assert calls[0]["url"] == "https://hn.algolia.com/api/v1/search"
+    assert calls[0]["params"] == {"query": "LLM agents", "tags": "story", "hitsPerPage": 3}
+    assert result["sort"] == "relevance"
+    assert result["items"][0] == {
+        "title": "LLM agents in prod", "url": "https://www.example.com/agents", "source": "example.com",
+        "discussion_url": "https://news.ycombinator.com/item?id=101",
+        "author": "alice", "points": 300, "num_comments": 42, "date": "2026-11-01T10:00:00Z",
+    }
+    assert len(result["items"]) == 2  # the hit without objectID is dropped
 
 
-def test_my_new_tool_failure_returns_error_dict() -> None:
-    pytest.skip(TODO)
+def test_hn_search_story_without_url_falls_back_to_discussion_link(fake_http) -> None:
+    fake_http(FakeResponse(HN_HITS))
+
+    ask_hn = hn_search(query="eval")["items"][1]
+
+    assert ask_hn["url"] == "https://news.ycombinator.com/item?id=102"
+    assert ask_hn["source"] == "news.ycombinator.com"
+
+
+def test_hn_search_sort_date_uses_search_by_date_and_coerces_string_limit(fake_http) -> None:
+    calls = fake_http(FakeResponse({"hits": []}))
+
+    result = hn_search(query="Rust", sort="date", limit="5")
+
+    assert calls[0]["url"] == "https://hn.algolia.com/api/v1/search_by_date"
+    assert calls[0]["params"]["hitsPerPage"] == 5
+    assert result["items"] == []
+
+
+def test_hn_search_clamps_out_of_range_limit(fake_http) -> None:
+    calls = fake_http(FakeResponse({"hits": []}))
+
+    hn_search(query="AI", limit=0)
+    hn_search(query="AI", limit=999)
+
+    assert calls[0]["params"]["hitsPerPage"] == 1
+    assert calls[1]["params"]["hitsPerPage"] == 20
+
+
+@pytest.mark.parametrize("bad_args", [
+    {"query": ""},
+    {"query": "   "},
+    {"query": None},
+    {"query": "AI", "sort": "popular"},
+    {"query": "AI", "limit": "nhiều"},
+])
+def test_hn_search_bad_input_from_model_returns_error_without_request(fake_http, bad_args) -> None:
+    calls = fake_http(FakeResponse(HN_HITS))
+
+    result = hn_search(**bad_args)
+
+    assert result["tool"] == "hn_search"
+    assert result["error"] == "ValueError"
+    assert calls == []
+
+
+def test_hn_search_http_error_returns_error_dict(fake_http) -> None:
+    fake_http(FakeResponse(status_code=503))
+
+    result = hn_search(query="AI")
+
+    assert result == {"tool": "hn_search", "error": "HTTPError", "message": "HTTP 503"}
+
+
+def test_hn_search_timeout_returns_error_dict(fake_http) -> None:
+    import requests
+
+    fake_http(requests.Timeout("read timed out"))
+
+    result = hn_search(query="AI")
+
+    assert result["error"] == "Timeout"
+    assert "timed out" in result["message"]

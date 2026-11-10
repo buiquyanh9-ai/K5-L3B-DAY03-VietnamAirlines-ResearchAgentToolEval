@@ -3,5 +3,144 @@
   "dataset_role": "group",
   "description": "Case do NHÓM tự viết thêm để cover thêm trường hợp. Mỗi case cần: id, phase='B', query HOẶC turns, failure_type (thuộc allowed_failure_types), và expect (tool_calls[...] hoặc no_tool=true). Nên kèm metadata.what_it_tests.",
   "allowed_failure_types": ["wrong_tool", "wrong_arg_value", "wrong_boundary", "unnecessary_tool", "out_of_scope", "missing_info"],
-  "cases": []
+  "cases": [
+    {
+      "id": "G01_hn_routing",
+      "phase": "B",
+      "query": "Trên Hacker News dân dev đang bàn gì về Rust?",
+      "failure_type": "wrong_tool",
+      "expect": {"tool_calls": [{"name": "hn_search", "args": {"query": "Rust"}}]},
+      "metadata": {
+        "skill": "routing_new_tool_hn",
+        "difficulty": "easy",
+        "what_it_tests": "Nhắc rõ Hacker News → route tới tool mới hn_search (không phải lookup/social_search), query chỉ là chủ đề 'Rust', không nhét 'Hacker News' vào query."
+      }
+    },
+    {
+      "id": "G02_hn_sort_date_limit",
+      "phase": "B",
+      "query": "Cho mình 3 bài mới nhất trên HN về LLM agents",
+      "failure_type": "wrong_arg_value",
+      "expect": {"tool_calls": [{"name": "hn_search", "args": {"sort": "date", "limit": 3}}]},
+      "metadata": {
+        "skill": "arg_new_tool_sort_limit",
+        "difficulty": "medium",
+        "what_it_tests": "Viết tắt 'HN' vẫn route tới hn_search; 'mới nhất' → sort='date'; giữ đúng limit=3."
+      }
+    },
+    {
+      "id": "G03_policy_area_privacy",
+      "phase": "B",
+      "query": "Theo chính sách công ty, có được đưa dữ liệu cá nhân của khách hàng vào công cụ AI bên ngoài không?",
+      "failure_type": "wrong_tool",
+      "expect": {"tool_calls": [{"name": "policy", "args": {"policy_area": "data_privacy"}}]},
+      "metadata": {
+        "skill": "routing_policy_area",
+        "difficulty": "medium",
+        "what_it_tests": "Câu hỏi về quy định nội bộ → policy (không phải lookup trên web), chọn đúng policy_area='data_privacy'."
+      }
+    },
+    {
+      "id": "G04_papers_max_results",
+      "phase": "B",
+      "query": "Tìm giúp mình 3 paper trên arXiv về đánh giá AI agent",
+      "failure_type": "wrong_arg_value",
+      "expect": {"tool_calls": [{"name": "papers", "args": {"max_results": 3}}]},
+      "metadata": {
+        "skill": "routing_papers_count",
+        "difficulty": "easy",
+        "what_it_tests": "Paper khoa học → papers (không phải lookup), giữ đúng số lượng max_results=3."
+      }
+    },
+    {
+      "id": "G05_out_of_scope_booking",
+      "phase": "B",
+      "query": "Đặt giúp mình vé máy bay Vietnam Airlines đi Đà Nẵng tối mai nhé",
+      "failure_type": "out_of_scope",
+      "expect": {"no_tool": true, "behavior": "refuse"},
+      "metadata": {
+        "skill": "out_of_scope_action",
+        "difficulty": "medium",
+        "what_it_tests": "Yêu cầu hành động ngoài phạm vi research (đặt vé) → KHÔNG gọi tool nào (không lookup, không send), giải thích phạm vi."
+      }
+    },
+    {
+      "id": "G06_hn_clarify_then_fill_limit",
+      "phase": "B",
+      "turns": [
+        {"role": "user", "content": "Lấy giúp mình 4 bài trên Hacker News"},
+        {"role": "assistant", "content": "Bạn muốn tìm bài trên Hacker News về chủ đề gì?"},
+        {"role": "user", "content": "Chủ đề Rust nhé"}
+      ],
+      "failure_type": "missing_info",
+      "expect": {"tool_calls": [{"name": "hn_search", "args": {"query": "Rust", "limit": 4}}]},
+      "metadata": {
+        "skill": "multiturn_new_tool_carryover",
+        "difficulty": "hard",
+        "what_it_tests": "3 lượt: lượt 1 thiếu chủ đề (agent đã hỏi lại), lượt 3 bổ sung chủ đề → gọi hn_search với query='Rust' và carry limit=4 từ lượt 1."
+      }
+    },
+    {
+      "id": "G07_switch_twitter_to_hn",
+      "phase": "B",
+      "turns": [
+        {"role": "user", "content": "Mọi người nói gì về Claude trên Twitter?"},
+        {"role": "user", "content": "Thôi bỏ Twitter, xem trên Hacker News thay nhé"}
+      ],
+      "failure_type": "wrong_tool",
+      "expect": {"tool_calls": [{"name": "hn_search", "args": {"query": "Claude"}}]},
+      "metadata": {
+        "skill": "multiturn_switch_to_new_tool",
+        "difficulty": "medium",
+        "what_it_tests": "User đổi nguồn từ Twitter sang Hacker News → chỉ gọi hn_search, giữ chủ đề Claude, KHÔNG gọi thêm social_search."
+      }
+    },
+    {
+      "id": "G08_send_after_confirmation",
+      "phase": "B",
+      "turns": [
+        {"role": "user", "content": "Đăng lên Telegram giúp mình bản tin: 'AI hôm nay: OpenAI công bố model mới'"},
+        {"role": "assistant", "content": "Bạn xác nhận muốn đăng nội dung 'AI hôm nay: OpenAI công bố model mới' lên Telegram channel chứ?"},
+        {"role": "user", "content": "Đúng rồi, đăng đi"}
+      ],
+      "failure_type": "wrong_boundary",
+      "expect": {"tool_calls": [{"name": "send", "args": {"confirmed": true}}]},
+      "metadata": {
+        "skill": "multiturn_confirmed_send",
+        "difficulty": "medium",
+        "what_it_tests": "Sau khi agent đã hỏi xác nhận và user trả lời đồng ý → gọi send với confirmed=true (không hỏi lại thêm lần nữa)."
+      }
+    },
+    {
+      "id": "G09_send_declined",
+      "phase": "B",
+      "turns": [
+        {"role": "user", "content": "Đăng bản tin 'Tin AI tuần này' lên Telegram nhé"},
+        {"role": "assistant", "content": "Bạn xác nhận muốn đăng nội dung 'Tin AI tuần này' lên Telegram channel chứ?"},
+        {"role": "user", "content": "Khoan, thôi đừng đăng nữa"}
+      ],
+      "failure_type": "wrong_boundary",
+      "expect": {"no_tool": true, "behavior": "answer_without_tool"},
+      "metadata": {
+        "skill": "multiturn_declined_send",
+        "difficulty": "medium",
+        "what_it_tests": "User từ chối ở bước xác nhận → KHÔNG gọi send (và không gọi tool nào khác), chỉ xác nhận đã hủy."
+      }
+    },
+    {
+      "id": "G10_correction_timeframe",
+      "phase": "B",
+      "turns": [
+        {"role": "user", "content": "Tin tức về Nvidia trong tuần này có gì?"},
+        {"role": "user", "content": "À không, chỉ cần tin hôm nay thôi"}
+      ],
+      "failure_type": "wrong_arg_value",
+      "expect": {"tool_calls": [{"name": "lookup", "args": {"query": "Nvidia", "topic": "news", "timeframe": "day"}}]},
+      "metadata": {
+        "skill": "multiturn_timeframe_correction",
+        "difficulty": "medium",
+        "what_it_tests": "User sửa khoảng thời gian ở lượt 2 → lookup topic='news', timeframe='day' (không phải 'week'), giữ chủ đề Nvidia."
+      }
+    }
+  ]
 }
