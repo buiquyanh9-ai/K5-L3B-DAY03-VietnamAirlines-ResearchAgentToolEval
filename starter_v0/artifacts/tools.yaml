@@ -16,14 +16,26 @@
 tools:
   # ---------------- Core tools ----------------
   - name: clarify
-    description: "Gửi một câu hỏi cho người dùng."
+    description: >-
+      Hỏi lại người dùng một câu rồi dừng chờ lượt trả lời tiếp theo.
+      DÙNG KHI: (1) thiếu thông tin bắt buộc để gọi tool khác, ví dụ không biết tài khoản nào, không có URL bài viết, không rõ chủ đề;
+      (2) trước MỌI hành động gửi/đăng/publish (send) để xin xác nhận.
+      KHÔNG DÙNG KHI: thông tin đã có trong request hoặc trong các lượt hội thoại trước; câu chào hỏi hoặc câu ngoài phạm vi research (trả lời trực tiếp).
+      Luôn truyền response_type.
     parameters:
       type: object
       properties:
-        question: {type: string, default: "", description: "Câu hỏi"}
-        response_type: {type: string, enum: [text, yes_no, choice], default: "text", description: "Kiểu trả lời"}
-        options: {type: array, default: [], items: {type: string}, description: "Các lựa chọn"}
-      required: [question]
+        question: {type: string, default: "", description: "Một câu hỏi ngắn, cụ thể, nói rõ đang thiếu thông tin gì hoặc đang xin xác nhận hành động gì."}
+        response_type:
+          type: string
+          enum: [text, yes_no, choice]
+          default: "text"
+          description: >-
+            Kiểu câu trả lời mong đợi. "text" = xin thông tin còn thiếu (tên tài khoản, URL, chủ đề...).
+            "yes_no" = xin xác nhận trước khi gửi/đăng/publish, kể cả khi chưa có nội dung cụ thể.
+            "choice" = để user chọn một trong các phương án liệt kê ở options.
+        options: {type: array, default: [], items: {type: string}, description: "Chỉ dùng với response_type=\"choice\": danh sách phương án để user chọn."}
+      required: [question, response_type]
 
   - name: timeline
     description: "Lấy các bài đăng gần đây."

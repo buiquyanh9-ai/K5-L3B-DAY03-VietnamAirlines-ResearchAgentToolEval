@@ -64,10 +64,12 @@ Lấy từ `starter_v0/artifacts/version_log.csv` và `starter_v0/runs/*.json`. 
 |---|---|---|---:|---:|---|
 | v0 | baseline (`v0+peb1c8179815b+te69bc53ed884`) | Đo hành vi chưa tối ưu trước khi sửa | — | case 0.65 · routing 0.75 · args 0.65 · multiturn 1.00 | [v0_B_base_openrouter_20261110T171017818123.json](../../starter_v0/runs/v0_B_base_openrouter_20261110T171017818123.json) |
 | v1 | `system_prompt.md` (`v1+p962dbad29898+te69bc53ed884`) | Các chỉ dẫn xấu của starter (đoán thay vì hỏi, gửi không cần xác nhận, luôn gọi một tool) gây lỗi missing_info / wrong_boundary / out_of_scope | case 0.65 · routing 0.75 · args 0.65 · multiturn 1.00 | case 0.85 · routing 0.95 · args 0.85 · multiturn 1.00 | [v1_B_base_openrouter_20261110T181806903038.json](../../starter_v0/runs/v1_B_base_openrouter_20261110T181806903038.json) |
-| v2 |  |  |  |  |  |
+| v2 | `tools.yaml`, khai báo `clarify` (`v2+p962dbad29898+t05e5e8588f27`) | Khai báo `clarify` mơ hồ ("Gửi một câu hỏi", `response_type` không giải thích, không bắt buộc) nên model bỏ trống hoặc chọn sai `response_type`, và vẫn đoán thay vì hỏi | case 0.85 · routing 0.95 · args 0.85 · multiturn 1.00 | case 0.95 · routing 1.00 · args 0.95 · multiturn 1.00 | [v2_B_base_openrouter_20261110T183120055417.json](../../starter_v0/runs/v2_B_base_openrouter_20261110T183120055417.json) |
 | v3 |  |  |  |  |  |
 
 **Ghi chú v1:** Sửa được R03, R08, R13, R14. Còn 3 case FAIL: R10 (`timeline(screenname="Twitter")`: câu "try to infer from context first" vẫn khiến agent đoán), R11 và R12 (`clarify` không truyền `response_type`, hoặc truyền sai kiểu thay vì `yes_no`). Đây là bằng chứng cho giả thuyết v2.
+
+**Ghi chú v2:** Chỉ sửa khối `clarify` trong `tools.yaml`; prompt giữ nguyên (prompt hash không đổi). R10 và R11 PASS: cả hai gọi `clarify(response_type="text")`, R10 không còn đoán `screenname="Twitter"`. Còn 1 case FAIL: R12. Agent vẫn hỏi nội dung bản tin bằng `response_type="text"` thay vì xin xác nhận `yes_no`, tức là ranh giới xác nhận của `send` chưa được khai báo rõ. Đây là bằng chứng cho giả thuyết v3.
 
 ### B2. Failure Analysis
 
