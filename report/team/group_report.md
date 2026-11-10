@@ -10,7 +10,7 @@
 
 - Tên nhóm:
 - Thành viên và phân công: xem [TEAM.md](../../TEAM.md)
-- Provider/model dùng cho v0–v3:
+- Provider/model dùng cho v0–v3: OpenRouter / `openai/gpt-4o-mini` (model mặc định của provider)
 
 ## 2. Mục tiêu và cách tiếp cận — PHẦN A: Giới thiệu agent
 
@@ -62,7 +62,7 @@ Lấy từ `starter_v0/artifacts/version_log.csv` và `starter_v0/runs/*.json`. 
 
 | Version | Changed Artifact | Hypothesis | Metric Before | Metric After | Run File |
 |---|---|---|---:|---:|---|
-| v0 | baseline |  |  |  |  |
+| v0 | baseline (`v0+peb1c8179815b+te69bc53ed884`) | Đo hành vi chưa tối ưu trước khi sửa | — | case 0.65 · routing 0.75 · args 0.65 · multiturn 1.00 | [v0_B_base_openrouter_20261110T171017818123.json](../../starter_v0/runs/v0_B_base_openrouter_20261110T171017818123.json) |
 | v1 |  |  |  |  |  |
 | v2 |  |  |  |  |  |
 | v3 |  |  |  |  |  |
@@ -71,9 +71,23 @@ Lấy từ `starter_v0/artifacts/version_log.csv` và `starter_v0/runs/*.json`. 
 
 Lấy từ `results[*].result.failures` trong run JSON.
 
+Run v0: 13/20 PASS, 7 FAIL, `provider_error_cases = 0`, `measured_cases = total_cases = 20`. Toàn bộ 6 case multi-turn đều PASS; cả 7 case FAIL là single turn.
+
 | Case ID | Failure Type | Actual Tool Calls | What Failed | Fix |
 |---|---|---|---|---|
-|  |  |  |  |  |
+| R03_web_news_routing | `wrong_arg_value` | `lookup(query="AI news", topic="news", timeframe="day")` | Chọn đúng tool và đúng `topic`/`timeframe`, nhưng nhét chữ "news" vào `query`: `expected 'AI', got 'AI news'` | `tools.yaml`: mô tả `query` của `lookup` chỉ chứa chủ đề cốt lõi; ý "tin tức / hôm nay" đã thể hiện qua `topic` và `timeframe` |
+| R08_out_of_scope | `out_of_scope` | `send(text="Nguyên hàm của x^2 là …")` | Câu toán ngoài phạm vi research, nhưng agent tự giải rồi dùng `send` làm kênh trả lời (tool trả `needs_confirmation` nên không gửi thật) | Prompt: định nghĩa phạm vi; ngoài phạm vi thì không gọi tool, từ chối và định hướng lại. Bỏ dòng "always … pick one tool" |
+| R10_missing_handle | `missing_info` | `timeline(screenname="sama")` | Không nói của ai, agent tự đoán Sam Altman, làm đúng theo chỉ dẫn xấu "pick a well-known account like Sam Altman" | Prompt: bỏ chỉ dẫn đoán; thiếu tài khoản thì gọi `clarify(response_type="text")` |
+| R11_missing_url | `missing_info` | `fetch(url="https://example.com/article")` | "Bài viết này" nhưng không có link, agent bịa URL theo chỉ dẫn "assume a likely URL" | Prompt: bỏ chỉ dẫn đoán URL; thiếu URL thì gọi `clarify` |
+| R12_confirm_before_send | `wrong_boundary` | `send(text="Bản tin này đã được đăng lên Telegram.")` | Gửi ngay, không xin xác nhận, nội dung bịa; làm theo chỉ dẫn "just go ahead and do it" | Prompt và `tools.yaml`: trước mọi hành động gửi phải gọi `clarify(response_type="yes_no")`; chỉ gọi `send(confirmed=true)` sau khi user đồng ý |
+| R13_parallel_web_and_tweets | `wrong_arg_value` | `lookup(query="AI news", timeframe="day")` + `social_search(query="AI", search_type="Latest", limit=5)` | Gọi đủ 2 tool, nhưng `lookup` thừa "news" trong `query` và thiếu `topic="news"` | `tools.yaml`: quy ước "tin tức/thời sự thì `topic=news`", `query` không chứa từ "news" |
+| R14_out_of_scope_coding | `out_of_scope` | `send(text="def fibonacci(n): …")` | Yêu cầu viết code ngoài phạm vi, agent viết code rồi gọi `send` | Giống R08 |
+
+**Nhận xét nguyên nhân gốc:**
+
+- **5/7 lỗi (R08, R10, R11, R12, R14) do `system_prompt.md`:** 3 case làm theo đúng chỉ dẫn xấu của starter ("đoán thay vì hỏi", "gửi ngay"). 2 case out-of-scope do dòng "Always finish … Pick one tool" ép model phải gọi tool.
+- **2/7 lỗi (R03, R13) do `tools.yaml`:** khai báo `lookup` không nói quy ước cho `query`/`topic`, nên model tự thêm "news" vào query và có lúc quên `topic`.
+- **Pattern đáng chú ý:** 3/7 case FAIL gọi `send` dù user không hề yêu cầu gửi. Model dùng `send` như kênh "trả lời user", vì description chỉ ghi "Gửi một đoạn văn bản đi." cộng với áp lực phải gọi một tool. Guardrail trong code (`needs_confirmation`) đã chặn việc gửi thật, nhưng eval vẫn tính là lỗi.
 
 ### B3. Team Eval Cases
 
