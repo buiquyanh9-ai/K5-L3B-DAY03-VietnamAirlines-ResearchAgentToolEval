@@ -52,7 +52,9 @@ Ví dụ: "Research agent: tìm tin theo từ khóa / theo tài khoản, đọc 
 
 > Tóm tắt các thay đổi chính trong `starter_v0/artifacts/system_prompt.md` và `starter_v0/artifacts/tools.yaml`, và tool mới nhóm viết (tên, làm gì, khi nào agent nên gọi).
 
--
+- **v1, `system_prompt.md`:** bỏ 3 chỉ dẫn xấu của starter: đoán thay vì hỏi (tự chọn Sam Altman, tự đoán URL), gửi/đăng không cần xác nhận, và "always finish in a single step, pick one tool". Thay bằng: thiếu thông tin thì `clarify`, không bịa tài khoản/URL, hỏi lại trước khi gửi, chỉ gọi tool khi cần.
+- **v2, `tools.yaml` (`clarify`):** viết lại description theo dạng "DÙNG KHI / KHÔNG DÙNG KHI", giải thích từng `response_type` (`text` = xin thông tin còn thiếu, `yes_no` = xin xác nhận trước khi gửi, `choice` = chọn từ `options`), và chuyển `response_type` thành tham số bắt buộc.
+- v3 và tool mới: *(điền sau)*
 
 ## 4. Kết quả — PHẦN B: Chi tiết và bằng chứng
 
@@ -92,6 +94,16 @@ Run v0: 13/20 PASS, 7 FAIL, `provider_error_cases = 0`, `measured_cases = total_
 - **5/7 lỗi (R08, R10, R11, R12, R14) do `system_prompt.md`:** 3 case làm theo đúng chỉ dẫn xấu của starter ("đoán thay vì hỏi", "gửi ngay"). 2 case out-of-scope do dòng "Always finish … Pick one tool" ép model phải gọi tool.
 - **2/7 lỗi (R03, R13) do `tools.yaml`:** khai báo `lookup` không nói quy ước cho `query`/`topic`, nên model tự thêm "news" vào query và có lúc quên `topic`.
 - **Pattern đáng chú ý:** 3/7 case FAIL gọi `send` dù user không hề yêu cầu gửi. Model dùng `send` như kênh "trả lời user", vì description chỉ ghi "Gửi một đoạn văn bản đi." cộng với áp lực phải gọi một tool. Guardrail trong code (`needs_confirmation`) đã chặn việc gửi thật, nhưng eval vẫn tính là lỗi.
+
+**Đối chiếu dự đoán với kết quả thật (v1, v2):**
+
+| Case | Dự đoán ở v0 | Thực tế | Ghi chú |
+|---|---|---|---|
+| R08, R14 | Sửa bằng prompt | PASS từ v1 | Đúng dự đoán |
+| R10 | Sửa bằng prompt | Vẫn FAIL ở v1 (`timeline(screenname="Twitter")`), PASS ở v2 | Bỏ chỉ dẫn xấu là chưa đủ, phải khai báo rõ `clarify` mới hết đoán |
+| R11 | Sửa bằng prompt | v1: gọi đúng `clarify` nhưng thiếu `response_type`; PASS ở v2 | Lỗi chuyển từ `wrong_tool` sang `wrong_arg_value`, sửa bằng `tools.yaml` |
+| R12 | Sửa bằng prompt + `tools.yaml` | v1 và v2: hỏi bằng `text` thay vì `yes_no` | Chưa sửa, là mục tiêu của v3 |
+| R03, R13 | Sửa bằng `tools.yaml` (`lookup`) | **PASS từ v1**, dù chưa sửa `lookup` | **Dự đoán sai.** Có thể việc bỏ áp lực "single step / pick one tool" đã giúp, hoặc đây chỉ là dao động giữa các lần chạy. Chưa có bằng chứng để tách hai khả năng này |
 
 ### B3. Team Eval Cases
 
@@ -162,7 +174,9 @@ Lỗi đặc thù của model nhỏ (đếm từ run JSON):
 
 > Khó khăn chính và cách nhóm xử lý. Nếu gặp lỗi kỹ thuật (provider lỗi, hết quota API, tool không chạy), mô tả lỗi và dẫn bằng chứng: run JSON, log, ảnh chụp.
 
--
+- **Hash bị lệch do ký tự xuống dòng (Windows):** máy chạy eval dùng `core.autocrlf=true`, nên `tools.yaml` trong working copy là CRLF, còn git lưu trên repo là LF. `tools_hash` của v0–v2 trong `version_log.csv` được tính trên bản CRLF, nên tính lại từ repo sẽ ra hash khác, dù nội dung giống hệt. Cách xử lý: từ v3, đổi `tools.yaml` sang LF trước khi chạy eval để hash trong log khớp với file trên repo. Riêng v0–v2 vẫn giữ run gốc, không chạy lại.
+- **Lỗi in tiếng Việt trên Windows:** khi output bị pipe, Python dùng codepage cp1252 nên báo `UnicodeEncodeError`. Xử lý bằng cách đặt `PYTHONUTF8=1` trước khi chạy `run_eval.py` / `chat.py`.
+- **Chọn prompt cho v1:** nhóm đã thử vài biến thể prompt v1 trước khi chốt. Chỉ run khớp hash prompt đã commit (`962dbad29898`) được ghi vào `version_log.csv`.
 
 ## 6. Tổng hợp đóng góp
 
@@ -173,6 +187,7 @@ Chi tiết đóng góp của từng thành viên nằm trong [TEAM.md](../../TEA
 - Fix nào thuộc `system_prompt.md`?
 - Fix nào thuộc `tools.yaml`?
 - Failure nào cần review thủ công thay vì chấm tự động?
+  - *(Từ v1–v2)* **R12_confirm_before_send:** user nói "Đăng bản tin này" nhưng không có bản tin nào trong hội thoại. Agent hỏi lại nội dung bằng `clarify(response_type="text")`. Đây là hành vi an toàn và hợp lý, vì agent không tự gửi, nhưng eval chấm FAIL do mong `yes_no`. Cần người review xem đây là lỗi thật hay giới hạn của cách chấm theo args.
 - Nếu có thêm một vòng, nhóm sẽ thử giả thuyết nào?
 
 ## 8. Tài liệu tham khảo
