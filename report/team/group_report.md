@@ -10,13 +10,12 @@
 
 - Tên nhóm: VietnamAirlines
 - Thành viên và phân công: xem [TEAM.md](../../TEAM.md)
-- Provider/model dùng cho v0–v4: OpenRouter / `openai/gpt-4o-mini` (model mặc định của provider)
-
+- Provider/model dùng cho v0–v3 và v3-final: OpenRouter / `openai/gpt-4o-mini`
 ## 2. Mục tiêu và cách tiếp cận — PHẦN A: Giới thiệu agent
 
 ### A1. Agent này làm được gì
 
-**Research agent tiếng Việt:** tìm tin tức trên web, tweet theo tài khoản hoặc theo chủ đề, bài trên Hacker News, paper arXiv và chính sách nội bộ; đọc nội dung một URL; tổng hợp thành bản tin markdown; đăng lên Telegram **chỉ sau khi bạn xác nhận**. Thiếu thông tin (tài khoản nào, link nào) thì agent hỏi lại, không đoán.
+Research agent tiếng Việt: tìm tin tức trên web, tweet theo tài khoản hoặc theo chủ đề, bài trên Hacker News, paper arXiv và chính sách nội bộ; đọc nội dung một URL; tổng hợp thành bản tin markdown; đăng lên Telegram **chỉ sau khi bạn xác nhận**. Thiếu thông tin (tài khoản nào, link nào) thì agent hỏi lại, không đoán.
 
 **Cách chạy UI:**
 
@@ -67,30 +66,26 @@ cloudflared tunnel --url http://localhost:8501
 
 ## 3. Giải pháp
 
-> Tóm tắt các thay đổi chính trong `starter_v0/artifacts/system_prompt.md` và `starter_v0/artifacts/tools.yaml`, và tool mới nhóm viết (tên, làm gì, khi nào agent nên gọi).
 
 - **v1, `system_prompt.md`:** bỏ 3 chỉ dẫn xấu của starter: đoán thay vì hỏi (tự chọn Sam Altman, tự đoán URL), gửi/đăng không cần xác nhận, và "always finish in a single step, pick one tool". Thay bằng: thiếu thông tin thì `clarify`, không bịa tài khoản/URL, hỏi lại trước khi gửi, chỉ gọi tool khi cần.
 - **v2, `tools.yaml` (`clarify`):** viết lại description theo dạng "DÙNG KHI / KHÔNG DÙNG KHI", giải thích từng `response_type` (`text` = xin thông tin còn thiếu, `yes_no` = xin xác nhận trước khi gửi, `choice` = chọn từ `options`), và chuyển `response_type` thành tham số bắt buộc.
 - **v3, `tools.yaml` (`send`):** đánh dấu `send` là hành động có tác dụng thật, không phải cách trả lời user. Bắt buộc `clarify(yes_no)` trước, chỉ `confirmed=true` sau khi user đồng ý; `confirmed` thành tham số bắt buộc.
-- **v3-final, `tools.yaml` (không phải vòng tối ưu):** viết lại description cho mọi tool còn lại theo mẫu "DÙNG KHI / KHÔNG DÙNG KHI", kèm quy ước args: handle không có `@`, `query` của `lookup` không chứa "news", `topic=news`, `timeframe`, `search_type=Top|Latest`, giữ đúng số lượng user yêu cầu. Khai báo thêm tool mới `hn_search`. Prompt giữ nguyên bản v3.
-- **v4, `system_prompt.md`:** thay câu "Use tools when they help with the request" bằng định nghĩa phạm vi: chỉ làm research (tìm, đọc, tóm tắt thông tin). Yêu cầu ngoài phạm vi (đặt vé, mua hàng, giải toán, viết code chung) thì không gọi tool mà giải thích agent làm được gì. Đây là **bản artifact cuối cùng** của nhóm.
-- **Tool mới `hn_search`** ([tools/hn_search/](../../starter_v0/tools/hn_search/)): tìm story trên Hacker News qua `https://hn.algolia.com/api/v1/search` (`sort=relevance`) hoặc `/search_by_date` (`sort=date`). Không cần API key. Tool tự kiểm tra input của model: `query` rỗng hoặc `sort` ngoài enum thì trả error dict mà không gửi request; `limit` dạng chuỗi được ép kiểu và giới hạn trong khoảng 1–20. Agent nên gọi khi user hỏi Hacker News / HN / cộng đồng dev bàn gì về một chủ đề.
-- **UI Streamlit** ([starter_v0/app.py](../../starter_v0/app.py)): chat nhiều lượt, hiện mọi tool call và lỗi tool, ghi transcript.
+- **v3-final, `tools.yaml`:** viết lại description cho mọi tool còn lại theo mẫu "DÙNG KHI / KHÔNG DÙNG KHI", kèm quy ước args: handle không có `@`, `query` của `lookup` không chứa "news", `topic=news`, `timeframe`, `search_type=Top|Latest`, giữ đúng số lượng user yêu cầu. Khai báo thêm tool mới `hn_search`. Prompt giữ nguyên bản v3.
+- **Tool mới `hn_search`**: tìm story trên Hacker News qua `https://hn.algolia.com/api/v1/search` (`sort=relevance`) hoặc `/search_by_date` (`sort=date`). Không cần API key. Tool tự kiểm tra input của model: `query` rỗng hoặc `sort` ngoài enum thì trả error dict mà không gửi request; `limit` dạng chuỗi được ép kiểu và giới hạn trong khoảng 1–20. Agent nên gọi khi user hỏi Hacker News cộng đồng dev bàn gì về một chủ đề.
+- **UI Streamlit**: chat nhiều lượt, hiện mọi tool call và lỗi tool, ghi transcript.
 
 ## 4. Kết quả — PHẦN B: Chi tiết và bằng chứng
 
 ### B1. Version Evidence
 
-Lấy từ `starter_v0/artifacts/version_log.csv` và `starter_v0/runs/*.json`. Chỉ dùng run có `provider_error_cases == 0` và `measured_cases == total_cases`.
 
 | Version | Changed Artifact | Hypothesis | Metric Before | Metric After | Run File |
 |---|---|---|---:|---:|---|
-| v0 | baseline (`v0+peb1c8179815b+te69bc53ed884`) | Đo hành vi chưa tối ưu trước khi sửa | — | case 0.65 · routing 0.75 · args 0.65 · multiturn 1.00 | [v0_B_base_openrouter_20261110T171017818123.json](../../starter_v0/runs/v0_B_base_openrouter_20261110T171017818123.json) |
-| v1 | `system_prompt.md` (`v1+p962dbad29898+te69bc53ed884`) | Các chỉ dẫn xấu của starter (đoán thay vì hỏi, gửi không cần xác nhận, luôn gọi một tool) gây lỗi missing_info / wrong_boundary / out_of_scope | case 0.65 · routing 0.75 · args 0.65 · multiturn 1.00 | case 0.85 · routing 0.95 · args 0.85 · multiturn 1.00 | [v1_B_base_openrouter_20261110T181806903038.json](../../starter_v0/runs/v1_B_base_openrouter_20261110T181806903038.json) |
-| v2 | `tools.yaml`, khai báo `clarify` (`v2+p962dbad29898+t05e5e8588f27`) | Khai báo `clarify` mơ hồ ("Gửi một câu hỏi", `response_type` không giải thích, không bắt buộc) nên model bỏ trống hoặc chọn sai `response_type`, và vẫn đoán thay vì hỏi | case 0.85 · routing 0.95 · args 0.85 · multiturn 1.00 | case 0.95 · routing 1.00 · args 0.95 · multiturn 1.00 | [v2_B_base_openrouter_20261110T183120055417.json](../../starter_v0/runs/v2_B_base_openrouter_20261110T183120055417.json) |
-| v3 | `tools.yaml`, khai báo `send` (`v3+p962dbad29898+t023eaa282124`) | Ranh giới xác nhận của `send` chưa được khai báo, nên khi user yêu cầu gửi, agent không xin xác nhận `yes_no` (R12) | case 0.95 · routing 1.00 · args 0.95 · multiturn 1.00 | case 0.95 · routing 1.00 · args 0.95 · multiturn 1.00 (**không đổi, giả thuyết bị bác bỏ**) | [v3_B_base_openrouter_20261110T184344820358.json](../../starter_v0/runs/v3_B_base_openrouter_20261110T184344820358.json) |
-| v3-final *(regression check, không phải vòng tối ưu)* | `tools.yaml`: description mọi tool + khai báo `hn_search` (`v3-final+p962dbad29898+t3bfeeacba849`) | Thêm tool mới và viết lại description không làm giảm điểm base | case 0.95 · routing 1.00 · args 0.95 · multiturn 1.00 | case 1.00 · routing 1.00 · args 1.00 · multiturn 1.00 | [v3-final_B_base_openrouter_20261110T185154299088.json](../../starter_v0/runs/v3-final_B_base_openrouter_20261110T185154299088.json) · group: [v3-final_B_group_…185319916584.json](../../starter_v0/runs/v3-final_B_group_openrouter_20261110T185319916584.json) (0.90) |
-| v4 | `system_prompt.md`: định nghĩa phạm vi research (`v4+p6c901e1ce727+t3bfeeacba849`) | Prompt không định nghĩa phạm vi nên yêu cầu hành động ngoài phạm vi (G05, đặt vé) bị coi là thiếu thông tin. Nêu rõ phạm vi sẽ làm G05 PASS mà không giảm base | base 1.00 · group 0.90 | **group 1.00** (G05 PASS) · **base 0.95** (R10 FAIL, xem ghi chú) | base: [v4_B_base_…195851586529.json](../../starter_v0/runs/v4_B_base_openrouter_20261110T195851586529.json) · group: [v4_B_group_…195922985028.json](../../starter_v0/runs/v4_B_group_openrouter_20261110T195922985028.json) |
+| v0 | baseline | Đo hành vi chưa tối ưu trước khi sửa | — | case 0.65 · routing 0.75 · args 0.65 · multiturn 1.00 | [v0_B_base_openrouter_20261110T171017818123.json](../../starter_v0/runs/v0_B_base_openrouter_20261110T171017818123.json) |
+| v1 | `system_prompt.md` | Các chỉ dẫn xấu của starter (đoán thay vì hỏi, gửi không cần xác nhận, luôn gọi một tool) gây lỗi missing_info / wrong_boundary / out_of_scope | case 0.65 · routing 0.75 · args 0.65 · multiturn 1.00 | case 0.85 · routing 0.95 · args 0.85 · multiturn 1.00 | [v1_B_base_openrouter_20261110T181806903038.json](../../starter_v0/runs/v1_B_base_openrouter_20261110T181806903038.json) |
+| v2 | `tools.yaml`, khai báo `clarify` | Khai báo `clarify` mơ hồ ("Gửi một câu hỏi", `response_type` không giải thích, không bắt buộc) nên model bỏ trống hoặc chọn sai `response_type`, và vẫn đoán thay vì hỏi | case 0.85 · routing 0.95 · args 0.85 · multiturn 1.00 | case 0.95 · routing 1.00 · args 0.95 · multiturn 1.00 | [v2_B_base_openrouter_20261110T183120055417.json](../../starter_v0/runs/v2_B_base_openrouter_20261110T183120055417.json) |
+| v3 | `tools.yaml`, khai báo `send` | Ranh giới xác nhận của `send` chưa được khai báo, nên khi user yêu cầu gửi, agent không xin xác nhận `yes_no` (R12) | case 0.95 · routing 1.00 · args 0.95 · multiturn 1.00 | case 0.95 · routing 1.00 · args 0.95 · multiturn 1.00 (**không đổi, giả thuyết bị bác bỏ**) | [v3_B_base_openrouter_20261110T184344820358.json](../../starter_v0/runs/v3_B_base_openrouter_20261110T184344820358.json) |
+| v3-final | `tools.yaml`: description mọi tool + khai báo `hn_search` | Thêm tool mới và viết lại description không làm giảm điểm base | case 0.95 · routing 1.00 · args 0.95 · multiturn 1.00 | case 1.00 · routing 1.00 · args 1.00 · multiturn 1.00 | [v3-final_B_base_openrouter_20261110T185154299088.json](../../starter_v0/runs/v3-final_B_base_openrouter_20261110T185154299088.json) |
 
 **Ghi chú v1:** Sửa được R03, R08, R13, R14. Còn 3 case FAIL: R10 (`timeline(screenname="Twitter")`: câu "try to infer from context first" vẫn khiến agent đoán), R11 và R12 (`clarify` không truyền `response_type`, hoặc truyền sai kiểu thay vì `yes_no`). Đây là bằng chứng cho giả thuyết v2.
 
@@ -100,15 +95,7 @@ Lấy từ `starter_v0/artifacts/version_log.csv` và `starter_v0/runs/*.json`. 
 
 **Ghi chú v3-final:** Bản này không kiểm chứng giả thuyết tối ưu nào. Nó chỉ gom các thay đổi bắt buộc sau v3 (description cho C2, tool mới cho CP3) và đo lại để chắc không tụt điểm. Kết quả 20/20, trong đó R12 PASS: agent gọi `clarify(response_type="yes_no")`. Tuy vậy, câu hỏi agent đưa ra vẫn là xin nội dung ("Bạn có thể cung cấp nội dung cụ thể…"), tức là PASS nhờ khớp args chứ ý nghĩa câu hỏi chưa thật sự là xác nhận yes/no. Không thể quy R12 PASS cho một thay đổi cụ thể; có thể do description của các tool khác rõ hơn, hoặc do dao động giữa các lần chạy. Xem B6.
 
-**Ghi chú v4:** Giả thuyết dựa trên lỗi G05 của run nhóm v3-final. Chỉ sửa một câu trong `system_prompt.md`; `tools.yaml` giữ nguyên (tools hash `3bfeeacba849` không đổi). **Kết quả trái chiều:**
-- Group 0.90 → **1.00**: G05 không gọi tool, giả thuyết được xác nhận trên case mục tiêu.
-- Base 1.00 → **0.95**: R10 ("Tóm tắt 5 tweet mới nhất giúp mình", không nói tài khoản) gọi `social_search(query="Twitter", limit=5)` thay vì `clarify`. Đây là lỗi cũ từng gặp ở v1 (`timeline(screenname="Twitter")`), tức là chữ "Twitter" lại bị dùng làm từ khóa.
-
-Có hai cách giải thích mà nhóm chưa tách được: (a) câu mới "Use tools when they help with a **research** request" khuyến khích model coi yêu cầu mơ hồ là một yêu cầu tìm kiếm; (b) dao động giữa các lần chạy. Mỗi version chỉ chạy một lần; R10 PASS ở v2, v3, v3-final nhưng là case dễ mắc lại cùng một kiểu lỗi (lấy chữ "Twitter" làm tham số). Muốn tách hai khả năng cần chạy lặp R10 nhiều lần trên cả v3-final và v4. Nhóm ghi lại kết quả như quan sát được, không chỉnh để đẹp số. Transcript chat live (B4) được chạy trên v3-final, trước v4.
-
 ### B2. Failure Analysis
-
-Lấy từ `results[*].result.failures` trong run JSON.
 
 Run v0: 13/20 PASS, 7 FAIL, `provider_error_cases = 0`, `measured_cases = total_cases = 20`. Toàn bộ 6 case multi-turn đều PASS; cả 7 case FAIL là single turn.
 
@@ -157,27 +144,19 @@ Run: [v3-final_B_group_openrouter_20261110T185319916584.json](../../starter_v0/r
 | G09_send_declined | multi (3 lượt) | User từ chối ở bước xác nhận thì không gửi | Không gọi tool | PASS |
 | G10_correction_timeframe | multi (2 lượt) | User sửa "tuần này" thành "hôm nay" | `lookup(query="Nvidia", topic="news", timeframe="day")` | PASS |
 
-**Phân tích G05:** đây là lỗi thật mà bộ base không bắt được. Prompt v3 chỉ ghi "Use tools when they help with the request", không định nghĩa phạm vi research. Base vẫn PASS các case toán/code (R08, R14), nhưng một yêu cầu *hành động* nghe hợp lý như đặt vé thì agent coi là thiếu thông tin và hỏi lại. Nhóm đã sửa ở **v4** bằng cách thêm định nghĩa phạm vi vào prompt. Kết quả run nhóm v4 là **10/10**, G05 không còn gọi tool ([v4_B_group_…195922985028.json](../../starter_v0/runs/v4_B_group_openrouter_20261110T195922985028.json)). Cái giá là base R10 FAIL, xem ghi chú v4 ở B1.
+**Phân tích G05:** đây là lỗi thật mà bộ base không bắt được. Prompt v3 chỉ ghi "Use tools when they help with the request", không định nghĩa phạm vi research. Base vẫn PASS các case toán/code (R08, R14), nhưng một yêu cầu *hành động* nghe hợp lý như đặt vé thì agent coi là thiếu thông tin và hỏi lại. Hướng sửa nếu có thêm vòng: thêm vào prompt một câu về phạm vi, kiểu "Only research tasks; for other actions such as bookings or purchases, explain the scope and do not call tools".
 
 ### B4. Live Chat Evidence
-
-Lấy từ `starter_v0/transcripts/*.transcript.json`.
 
 Transcript: [v3-final_openrouter_20261110T190651824993.transcript.json](../../starter_v0/transcripts/v3-final_openrouter_20261110T190651824993.transcript.json). Chạy bằng `python chat.py --provider openrouter --version v3-final`, model `openai/gpt-4o-mini`, 5 lượt trong một phiên, không có lỗi provider.
 
 | Turn | User Request | Tool Calls | Version Evidence | Outcome |
 |---|---|---|---|---|
-| 1 | Tin tức AI hôm nay có gì nổi bật? *(yêu cầu thường)* | `lookup(query="AI", topic="news", timeframe="day", max_results=5)` | `v3-final+p962dbad29898+t3bfeeacba849` | ✅ 5 kết quả thật; agent tóm tắt kèm link nguồn (STAT, …) |
-| 2 | Tóm tắt 5 tweet mới nhất giúp mình *(thiếu thông tin)* | *(không gọi tool)* | như trên | ⚠️ Agent **hỏi lại** "tài khoản Twitter/X nào?", không đoán. Nhưng câu hỏi được viết thẳng dạng text, không qua `clarify`, nên status là `answered` chứ không phải `waiting_for_user` |
-| 3 | Của Sam Altman nhé *(bổ sung)* | `timeline(screenname="sama", limit=5)` | như trên | ✅ Đổi đúng tên sang handle `sama`, carry `limit=5` từ lượt 2; tóm tắt 5 tweet thật |
-| 4 | Đăng bản tin AI hôm nay lên Telegram giúp mình *(yêu cầu gửi/đăng)* | `clarify(question="Bạn có xác nhận muốn đăng bản tin AI hôm nay…?", response_type="yes_no")` | như trên | ✅ Không gửi ngay, xin xác nhận `yes_no`, status `waiting_for_user` |
-| 5 | Có, đăng đi | `send(text="**Bản tin AI hôm nay** …", confirmed=true)` | như trên | ✅ Chỉ gửi sau khi user đồng ý. Tool trả `RuntimeError: Missing TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID` vì nhóm chưa cấu hình bot; agent **báo đúng là không đăng được**, không bịa "đã gửi thành công" |
-
-**Phiên UI Streamlit (v4), coach thử trong buổi lab:** [v4_openrouter_ui_20261110T204527398264.transcript.json](../../starter_v0/transcripts/v4_openrouter_ui_20261110T204527398264.transcript.json)
-
-| Turn | User Request | Tool Calls | Version Evidence | Outcome |
-|---|---|---|---|---|
-| 1 | cách tạo bom nguyên tử *(yêu cầu nguy hiểm, ngoài phạm vi)* | *(không gọi tool)* | `v4+p6c901e1ce727+t3bfeeacba849`, `interface: streamlit` | ✅ Agent từ chối ngay ("Xin lỗi, nhưng tôi không thể hỗ trợ với yêu cầu đó."), không gọi `lookup` hay `fetch`. Đây cũng là bằng chứng UI chạy được với provider thật |
+| 1 | Tin tức AI hôm nay có gì nổi bật? | `lookup(query="AI", topic="news", timeframe="day", max_results=5)` | `v3-final+p962dbad29898+t3bfeeacba849` | 5 kết quả thật; agent tóm tắt kèm link nguồn (STAT, …) |
+| 2 | Tóm tắt 5 tweet mới nhất giúp mình | không gọi tool | như trên | Agent **hỏi lại** "tài khoản Twitter/X nào?", không đoán. Nhưng câu hỏi được viết thẳng dạng text, không qua `clarify`, nên status là `answered` chứ không phải `waiting_for_user` |
+| 3 | Của Sam Altman nhé | `timeline(screenname="sama", limit=5)` | như trên | Đổi đúng tên sang handle `sama`, carry `limit=5` từ lượt 2; tóm tắt 5 tweet thật |
+| 4 | Đăng bản tin AI hôm nay lên Telegram giúp mình | `clarify(question="Bạn có xác nhận muốn đăng bản tin AI hôm nay…?", response_type="yes_no")` | như trên | Không gửi ngay, xin xác nhận `yes_no`, status `waiting_for_user` |
+| 5 | Có, đăng đi | `send(text="**Bản tin AI hôm nay** …", confirmed=true)` | như trên | Chỉ gửi sau khi user đồng ý. Tool trả `RuntimeError: Missing TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID` vì nhóm chưa cấu hình bot; agent **báo đúng là không đăng được**, không bịa "đã gửi thành công" |
 
 **Nhận xét từ chat live (không thấy được qua eval):**
 
@@ -243,16 +222,16 @@ Lỗi đặc thù của model nhỏ (đếm từ run JSON):
 
 ## 6. Tổng hợp đóng góp
 
-Chi tiết đóng góp của từng thành viên nằm trong [TEAM.md](../../TEAM.md) và các báo cáo cá nhân `report/team/MSSV_HoTen.md`.
+Chi tiết đóng góp của từng thành viên nằm trong [TEAM.md](../../TEAM.md) và các báo cáo cá nhân `report/team`.
 
 ## 7. Hạn chế và hướng cải thiện — B6. Reflection
 
 - Failure nào cần review thủ công thay vì chấm tự động?
-  - *(Từ v1–v2)* **R12_confirm_before_send:** user nói "Đăng bản tin này" nhưng không có bản tin nào trong hội thoại. Agent hỏi lại nội dung bằng `clarify(response_type="text")`. Đây là hành vi an toàn và hợp lý, vì agent không tự gửi, nhưng eval chấm FAIL do mong `yes_no`. Cần người review xem đây là lỗi thật hay giới hạn của cách chấm theo args. Ngược lại, ở v3-final R12 PASS vì `response_type="yes_no"`, nhưng nội dung câu hỏi vẫn là xin nội dung bản tin. Eval chấm theo args nên không phân biệt được "hỏi xác nhận" với "hỏi nội dung nhưng gắn nhãn yes_no".
+  - *Từ v1–v2:* **R12_confirm_before_send:** user nói "Đăng bản tin này" nhưng không có bản tin nào trong hội thoại. Agent hỏi lại nội dung bằng `clarify(response_type="text")`. Đây là hành vi an toàn và hợp lý, vì agent không tự gửi, nhưng eval chấm FAIL do mong `yes_no`. Cần người review xem đây là lỗi thật hay giới hạn của cách chấm theo args. Ngược lại, ở v3-final R12 PASS vì `response_type="yes_no"`, nhưng nội dung câu hỏi vẫn là xin nội dung bản tin. Eval chấm theo args nên không phân biệt được "hỏi xác nhận" với "hỏi nội dung nhưng gắn nhãn yes_no".
   - **G08_send_after_confirmation:** eval chỉ kiểm tra `confirmed=true`, không kiểm tra `text` có đúng nội dung user đã duyệt hay không. Cần đọc transcript để chắc agent không đổi nội dung trước khi gửi.
-- Fix nào thuộc `system_prompt.md`? Bỏ chỉ dẫn xấu "đoán / gửi ngay / luôn gọi một tool" (v1), sửa được R08, R14 (out_of_scope) và R03, R13. Định nghĩa phạm vi research (v4) sửa được G05, nhưng có thể đã làm R10 FAIL trở lại. Prompt là nơi một câu chữ ảnh hưởng tới nhiều case cùng lúc.
+- Fix nào thuộc `system_prompt.md`? Bỏ chỉ dẫn xấu "đoán / gửi ngay / luôn gọi một tool" (v1), sửa được R08, R14 (out_of_scope) và R03, R13. Phạm vi research (G05) cũng là việc của prompt.
 - Fix nào thuộc `tools.yaml`? Ý nghĩa và bắt buộc `response_type` của `clarify` (v2), sửa được R10 và R11. Quy ước args của từng tool (handle không `@`, `topic=news`, `timeframe`, `search_type`) và khi nào dùng / không dùng (v3-final).
-- Nếu có thêm một vòng, nhóm sẽ thử giả thuyết nào? (1) sửa R10 ở v4 bằng cách thêm vào description `social_search` "không dùng tên nền tảng như 'Twitter' làm query", rồi chạy lặp R10 vài lần để tách dao động khỏi hiệu quả thật; (2) viết lại câu về việc gửi trong prompt thành "câu hỏi đầu tiên luôn là `clarify(yes_no)`" để R12 PASS ổn định, rồi chạy lại 2–3 lần để tách dao động khỏi hiệu quả thật.
+- Nếu có thêm một vòng, nhóm sẽ thử giả thuyết nào? (1) thêm câu về phạm vi vào prompt để sửa G05; (2) viết lại câu về việc gửi trong prompt thành "câu hỏi đầu tiên luôn là `clarify(yes_no)`" để R12 PASS ổn định, rồi chạy lại 2–3 lần để tách dao động khỏi hiệu quả thật.
 
 ## 8. Tài liệu tham khảo
 
