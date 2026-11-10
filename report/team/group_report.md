@@ -155,11 +155,20 @@ Run: [v3-final_B_group_openrouter_20261110T185319916584.json](../../starter_v0/r
 
 Lấy từ `starter_v0/transcripts/*.transcript.json`.
 
-> *(Điền sau khi chạy `python chat.py --provider openrouter --version v3-final` đủ 3 lượt: yêu cầu thường → yêu cầu thiếu thông tin rồi bổ sung → yêu cầu đăng Telegram.)*
+Transcript: [v3-final_openrouter_20261110T190651824993.transcript.json](../../starter_v0/transcripts/v3-final_openrouter_20261110T190651824993.transcript.json). Chạy bằng `python chat.py --provider openrouter --version v3-final`, model `openai/gpt-4o-mini`, 5 lượt trong một phiên, không có lỗi provider.
 
 | Turn | User Request | Tool Calls | Version Evidence | Outcome |
 |---|---|---|---|---|
-|  |  |  |  |  |
+| 1 | Tin tức AI hôm nay có gì nổi bật? *(yêu cầu thường)* | `lookup(query="AI", topic="news", timeframe="day", max_results=5)` | `v3-final+p962dbad29898+t3bfeeacba849` | ✅ 5 kết quả thật; agent tóm tắt kèm link nguồn (STAT, …) |
+| 2 | Tóm tắt 5 tweet mới nhất giúp mình *(thiếu thông tin)* | *(không gọi tool)* | như trên | ⚠️ Agent **hỏi lại** "tài khoản Twitter/X nào?", không đoán. Nhưng câu hỏi được viết thẳng dạng text, không qua `clarify`, nên status là `answered` chứ không phải `waiting_for_user` |
+| 3 | Của Sam Altman nhé *(bổ sung)* | `timeline(screenname="sama", limit=5)` | như trên | ✅ Đổi đúng tên sang handle `sama`, carry `limit=5` từ lượt 2; tóm tắt 5 tweet thật |
+| 4 | Đăng bản tin AI hôm nay lên Telegram giúp mình *(yêu cầu gửi/đăng)* | `clarify(question="Bạn có xác nhận muốn đăng bản tin AI hôm nay…?", response_type="yes_no")` | như trên | ✅ Không gửi ngay, xin xác nhận `yes_no`, status `waiting_for_user` |
+| 5 | Có, đăng đi | `send(text="**Bản tin AI hôm nay** …", confirmed=true)` | như trên | ✅ Chỉ gửi sau khi user đồng ý. Tool trả `RuntimeError: Missing TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID` vì nhóm chưa cấu hình bot; agent **báo đúng là không đăng được**, không bịa "đã gửi thành công" |
+
+**Nhận xét từ chat live (không thấy được qua eval):**
+
+- **Lượt 2:** hành vi đúng về mặt nội dung (hỏi lại thay vì đoán), nhưng không dùng tool `clarify`. Trong eval, nhánh này bị ép `tool_choice="required"` nên luôn ra `clarify`. Ở chat thật thì không có ràng buộc đó, nên model có lúc tự hỏi bằng text. UI vẫn chạy đúng vì lượt sau có history; nhưng nếu có logic dựa vào `awaiting_user` thì sẽ bị lệch.
+- **Lượt 4–5, rủi ro về ranh giới xác nhận:** câu hỏi xác nhận chỉ ghi "bản tin AI hôm nay với các thông tin đã tóm tắt", **không hiện nguyên văn nội dung sẽ đăng**. Nội dung thật chỉ được soạn ở lượt 5, lúc gọi `send`. Như vậy user đồng ý mà chưa thấy chính xác văn bản sẽ được đăng. Cách sửa nếu có thêm vòng: trong prompt hoặc description của `send`, yêu cầu đưa nguyên văn `text` dự định gửi vào câu hỏi `clarify(yes_no)`, và `send` phải dùng đúng văn bản đó.
 
 ### B5a. Required Evidence — Tool mới, unit test, UI
 
