@@ -98,13 +98,19 @@ tools:
 
   # ---------------- Bonus tools ----------------
   - name: send
-    description: "Gửi một đoạn văn bản đi."
+    description: >-
+      HÀNH ĐỘNG CÓ TÁC DỤNG THẬT: đăng một đoạn văn bản lên Telegram channel của nhóm.
+      Đây KHÔNG phải cách trả lời user trong chat; câu trả lời bình thường thì viết thẳng, không gọi send.
+      QUY TRÌNH BẮT BUỘC: khi user yêu cầu gửi/đăng/publish, lượt đầu tiên KHÔNG gọi send mà gọi
+      clarify(response_type="yes_no") để xin xác nhận, kể cả khi nội dung chưa rõ (hỏi xác nhận kèm nội dung dự định gửi).
+      Chỉ gọi send(confirmed=true) ở lượt sau, khi user đã trả lời đồng ý rõ ràng cho đúng nội dung đó.
+      Yêu cầu gửi ban đầu KHÔNG được tính là xác nhận. User từ chối hoặc đổi nội dung thì không gửi / hỏi xác nhận lại.
     parameters:
       type: object
       properties:
-        text: {type: string, default: "", description: "Nội dung"}
-        confirmed: {type: boolean, default: false, description: "Cờ xác nhận"}
-      required: [text]
+        text: {type: string, default: "", description: "Nội dung thật sẽ được đăng, đúng như bản user đã đồng ý. Không phải câu thông báo kiểu 'đã gửi'."}
+        confirmed: {type: boolean, default: false, description: "Chỉ đặt true khi user đã trả lời đồng ý (yes) cho câu hỏi xác nhận trước đó. Mặc định false; false thì tool không gửi."}
+      required: [text, confirmed]
 
   - name: policy
     description: "Tìm trong tài liệu nội bộ."
