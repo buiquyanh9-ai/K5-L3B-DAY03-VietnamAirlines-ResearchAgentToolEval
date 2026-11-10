@@ -79,7 +79,7 @@ with st.sidebar:
     st.header("⚙️ Cấu hình")
     provider_name = st.selectbox("Provider", PROVIDERS, index=0)
     model_input = st.text_input("Model (để trống = mặc định của provider)", value="")
-    version = st.text_input("Version label", value="v3-final")
+    version = st.text_input("Version label", value="v4")
     history_window = st.slider("History window (cặp lượt)", 0, 10, 5)
     max_rounds = st.slider("Max tool rounds", 1, 6, 4)
     model = model_input.strip() or None
