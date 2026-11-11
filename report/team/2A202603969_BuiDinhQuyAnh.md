@@ -14,7 +14,6 @@
 - Setup môi trường và API key cho cả nhóm; quản lý repo nộp bài.
 - Chạy baseline v0 và vòng tối ưu v1–v4 (prompt + tool declaration), ghi `version_log.csv`.
 - Điều phối việc để viết tool mới, unit test, eval case nhóm, UI và báo cáo nhóm; review và kiểm tra lại kết quả.
-- Chạy chat live và demo UI.
 
 ## 3. Đóng góp cụ thể
 
@@ -23,12 +22,10 @@
 - **v1:** tự viết và thử nhiều biến thể `system_prompt.md` (5 lần chạy, 4 bản prompt), chốt bản bỏ 3 chỉ dẫn xấu của starter (prompt hash `962dbad29898`, 0.65 → 0.85); chỉ giữ run khớp hash đã commit.
 - Quyết định quy trình: dừng vòng tối ưu ở v3, gom thay đổi bắt buộc vào `v3-final`, sau đó thêm v4 dựa trên lỗi G05 của run nhóm.
 - Chạy chat live 5 lượt bằng `chat.py` (`transcripts/v3-final_openrouter_20261110T190651824993.transcript.json`) đủ 3 tình huống: yêu cầu thường, thiếu thông tin rồi bổ sung, yêu cầu đăng Telegram.
-- Chạy UI Streamlit trong buổi lab cho coach thử (`transcripts/v4_openrouter_ui_20261110T204527398264.transcript.json`).
 - Tạo / quản lý repo GitHub nộp bài, push code, mời thành viên.
 - Phân tích lỗi v0 (bảng B2) và các giả thuyết v2 (`clarify`), v3 (`send`), v4 (phạm vi research).
 - Tool mới `hn_search` (`starter_v0/tools/hn_search/`) + 11 unit test (`tests/test_tools_todo.py`).
-- Viết lại description mọi tool trong `tools.yaml` (v3-final).
-- 10 eval case nhóm (`data/eval_group.json`).
+- Viết lại description tool trong `tools.yaml` (v3-final).
 - UI Streamlit (`starter_v0/app.py`).
 
 ## 4. Bằng chứng
