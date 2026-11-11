@@ -11,10 +11,9 @@
 
 | STT | Họ tên | MSSV | Email | GitHub | Vai trò |
 | --: | ------ | ---- | ----- | ------ | ------- |
-| 1 | Nguyễn Thanh Tùng | 2A202603957 | Thtung13102004@gmail.com | [wewewewe07](https://github.com/wewewewe07)| **Người 1 — Tool Engineer & Testing:** tool mới, unit test, contract test; CP3 và hỗ trợ CP1 |
+| 1 | Nguyễn Thanh Tùng | 2A202603957 | Thtung13102004@gmail.com | [wewewewe07](https://github.com/wewewewe07) | **Người 1 — Tool Engineer & Testing:** tool mới, unit test, contract test; CP3 và hỗ trợ CP1 |
 | 2 | Bùi Đình Quý Anh | 2A202603969 | buiquyanh9@gmail.com | [buiquyanh9-ai](https://github.com/buiquyanh9-ai) | **Người 2 — Prompt & Optimization Lead:** baseline v0, tối ưu v1–v3, base eval và version log; CP1–CP2 |
-| 3 | Giang Thái Sơn | 2A202603964 | giangson309@gmail.com |son309| **Người 3 — Eval Dataset & Reporting:** 10 eval case, group eval, live-chat evidence và báo cáo; CP4 và phần báo cáo CP5 |
-| 4 | *(tạm trống)* | *(tạm trống)* | *(tạm trống)* | *(tạm trống)* | **Người 4 — UI Engineer:** Streamlit UI, kiểm thử UI, tunnel/deploy và link dùng thử; phần UI của CP5 |
+| 3 | Giang Thái Sơn | 2A202603964 | giangson309@gmail.com | [son309](https://github.com/son309) | **Người 3 — Eval Dataset, UI & Reporting:** 10 eval case, group eval, Streamlit UI, tunnel/deploy, live-chat evidence và báo cáo; CP4–CP5 |
 
 ## Nguyễn Thanh Tùng — 2A202603957
 
@@ -64,15 +63,17 @@
 
 ### Phần việc phụ trách
 
-- Người 3 — Eval Dataset & Reporting.
+- Người 3 — Eval Dataset, UI & Reporting.
 - Phụ trách CP4: thiết kế 10 group eval case và đối chiếu kết quả group eval.
-- Phụ trách phần báo cáo của CP5: live-chat evidence, bảng kết quả và reflection; không phụ trách code UI hoặc deploy.
+- Phụ trách CP5: xây dựng và kiểm thử Streamlit UI, ghi transcript, chuẩn bị tunnel/deploy, link dùng thử, live-chat evidence, bảng kết quả và reflection.
 
 ### Đóng góp cụ thể
 
 - Hoàn thiện bộ `eval_group.json` gồm đúng 5 single-turn và 5 multi-turn.
 - Bao phủ các lỗi routing, argument, missing information, action boundary và out-of-scope; có 4 case kiểm tra tool mới `hn_search`.
 - Đối chiếu group run v3-final đạt `9/10` và v4 đạt `10/10`, đều không có provider error.
+- Xây dựng `starter_v0/app.py` bằng Streamlit, hỗ trợ chat nhiều lượt, chọn provider/model, hiển thị tool call, kết quả và lỗi tool.
+- Thêm dependency Streamlit, ghi transcript từ giao diện và chuẩn bị lệnh chạy/tunnel để người ngoài dùng thử.
 - Tổng hợp bằng chứng group eval, live chat và giới hạn của agent vào báo cáo nhóm.
 
 ### Bằng chứng
@@ -80,4 +81,5 @@
 - Báo cáo cá nhân: [`report/team/2A202603964_GiangThaiSon.md`](report/team/2A202603964_GiangThaiSon.md).
 - Eval dataset: [`starter_v0/data/eval_group.json`](starter_v0/data/eval_group.json).
 - Group runs: [`v3-final_B_group_openrouter_20261110T185319916584.json`](starter_v0/runs/v3-final_B_group_openrouter_20261110T185319916584.json) và [`v4_B_group_openrouter_20261110T195922985028.json`](starter_v0/runs/v4_B_group_openrouter_20261110T195922985028.json).
+- UI: [`starter_v0/app.py`](starter_v0/app.py), [`starter_v0/requirements.txt`](starter_v0/requirements.txt) và transcript [`v4_openrouter_ui_20261110T204527398264.transcript.json`](starter_v0/transcripts/v4_openrouter_ui_20261110T204527398264.transcript.json).
 - Báo cáo nhóm: [`report/team/group_report.md`](report/team/group_report.md), đặc biệt các mục B3, B4 và B6.
