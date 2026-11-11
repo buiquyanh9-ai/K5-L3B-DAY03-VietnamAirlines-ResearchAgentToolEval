@@ -11,7 +11,7 @@
 
 | STT | Họ tên | MSSV | Email | GitHub | Vai trò |
 | --: | ------ | ---- | ----- | ------ | ------- |
-| 1 | Nguyễn Thanh Tùng | 2A202603957 | Thtung13102004@gmail.com || **Người 1 — Tool Engineer & Testing:** tool mới, unit test, contract test; CP3 và hỗ trợ CP1 |
+| 1 | Nguyễn Thanh Tùng | 2A202603957 | Thtung13102004@gmail.com | [wewewewe07](https://github.com/wewewewe07)| **Người 1 — Tool Engineer & Testing:** tool mới, unit test, contract test; CP3 và hỗ trợ CP1 |
 | 2 | Bùi Đình Quý Anh | 2A202603969 | buiquyanh9@gmail.com | [buiquyanh9-ai](https://github.com/buiquyanh9-ai) | **Người 2 — Prompt & Optimization Lead:** baseline v0, tối ưu v1–v3, base eval và version log; CP1–CP2 |
 | 3 | Giang Thái Sơn | 2A202603964 | giangson309@gmail.com |son309| **Người 3 — Eval Dataset & Reporting:** 10 eval case, group eval, live-chat evidence và báo cáo; CP4 và phần báo cáo CP5 |
 | 4 | *(tạm trống)* | *(tạm trống)* | *(tạm trống)* | *(tạm trống)* | **Người 4 — UI Engineer:** Streamlit UI, kiểm thử UI, tunnel/deploy và link dùng thử; phần UI của CP5 |
