@@ -1,4 +1,4 @@
-# Báo cáo cá nhân — HoVaTen-MSSV
+# Báo cáo cá nhân — Người 2 — Prompt & Optimization Lead
 
 > Đổi tên file thành `MSSV_HoTen.md` (ví dụ `20241234_NguyenVanAn.md`) và điền mục 1 trước khi nộp.
 
