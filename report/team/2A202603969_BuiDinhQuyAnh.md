@@ -18,8 +18,6 @@
 
 ## 3. Đóng góp cụ thể
 
-**Tự thực hiện:**
-
 - Lấy và cấu hình key OpenRouter / Tavily / Firecrawl / RapidAPI trong `starter_v0/.env` (không commit).
 - Chạy baseline v0 (`runs/v0_B_base_openrouter_20261110T171017818123.json`, 0.65).
 - **v1:** tự viết và thử nhiều biến thể `system_prompt.md` (5 lần chạy, 4 bản prompt), chốt bản bỏ 3 chỉ dẫn xấu của starter (prompt hash `962dbad29898`, 0.65 → 0.85); chỉ giữ run khớp hash đã commit.
@@ -32,7 +30,6 @@
 - Viết lại description mọi tool trong `tools.yaml` (v3-final).
 - 10 eval case nhóm (`data/eval_group.json`).
 - UI Streamlit (`starter_v0/app.py`).
-- Một phần nội dung `report/team/group_report.md`.
 
 ## 4. Bằng chứng
 
